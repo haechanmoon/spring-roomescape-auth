@@ -1,4 +1,4 @@
-## 방탈출 사용자 예약
+# 방탈출 사용자 예약
 
 ---
 
@@ -39,9 +39,16 @@ erDiagram
         VARCHAR start_at
     }
 
-    RESERVATION {
+    MEMBER {
         BIGINT id PK
         VARCHAR name
+        VARCHAR email
+        VARCHAR password
+    }
+
+    RESERVATION {
+        BIGINT id PK
+        BIGINT member_id FK
         VARCHAR date
         BIGINT time_id FK
         BIGINT theme_id FK
@@ -49,6 +56,7 @@ erDiagram
 
     RESERVATION }o--|| RESERVATION_TIME: "참조 (time_id)"
     RESERVATION }o--|| THEME: "참조 (theme_id)"
+    RESERVATION }o--|| MEMBER: "참조 (member_id)"
 ```
 
 ---
@@ -501,6 +509,46 @@ erDiagram
 
 </details>
 
-## 방탈출 사용자 인증/인가
+# 방탈출 사용자 인증/인가
 
+## Cycle3 기능 구현 목록
 
+<details>
+<summary>1단계 - 웹에서 로그인하기</summary>
+
+- **Member 도메인 및 DB**
+    - [x] `member` 테이블 추가 (`id`, `name`, `email`, `password`)
+    - [x] `reservation` 테이블의 `name` → `member_id` FK 변경
+    - [x] `Member` 도메인 클래스 구현
+    - [x] `MemberDao` 구현 (`findByEmailAndPassword`, `findById`, `save`)
+    - [x] `MemberService` 구현 (로그인 검증, 회원 조회)
+
+- **로그인 기능**
+    - [x] `LoginRequest` DTO 구현
+    - [x] `JwtTokenProvider` 구현 (토큰 생성, 검증, memberId 추출)
+    - [x] `LoginController` 구현 (`POST /login` → 쿠키에 JWT 토큰 발급)
+
+- **인증 공통 처리 (Interceptor)**
+    - [x] `AuthInterceptor` 구현 (쿠키에서 토큰 추출 및 검증)
+    - [x] `UnauthorizedException` 및 `GlobalExceptionHandler`에 401 핸들러 추가
+    - [x] 인증이 필요한 API 경로 패턴 설정 (`/reservations/**`)
+
+- **사용자 정보 주입 (ArgumentResolver)**
+    - [x] `@LoginMember` 어노테이션 구현
+    - [x] `LoginMemberArgumentResolver` 구현 (토큰 → `Member` 객체 주입)
+    - [x] `WebMvcConfig`에 Interceptor 및 ArgumentResolver 등록
+
+- **예약 로직 사용자 기반 전환**
+    - [x] `Reservation` 도메인: `String name` → `Member member` 변경
+    - [x] `ReservationRequest` DTO: `name` 필드 제거
+    - [x] `ReservationDao`: `member` 테이블 JOIN, `member_id` 기반 CRUD
+    - [x] `ReservationService`: `save`, `update`, `deleteByIdFromMember`에 `Member` 파라미터 추가
+    - [x] `ReservationController`: `@LoginMember Member member`로 사용자 정보 주입
+    - [x] 사용자 예약 조회: `GET /reservations` → 로그인 사용자 본인 예약만 조회
+    - [x] 관리자 예약 조회: `GET /admin/reservations` → 전체 예약 조회 분리
+
+- **테스트 코드 수정**
+    - [x] `ReservationDaoTest`, `ReservationServiceTest`, `ThemeServiceTest`, `ThemeDaoTest`, `ReservationTimeServiceTest` Member 기반으로 수정
+    - [x] `MissionStepTest` 인증 쿠키 포함하도록 수정
+
+</details>
