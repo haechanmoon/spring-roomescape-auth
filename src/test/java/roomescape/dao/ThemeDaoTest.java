@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import roomescape.domain.Member;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
@@ -17,7 +18,7 @@ import roomescape.dto.PopularThemeResult;
 import roomescape.exception.ResourceNotFoundException;
 
 @JdbcTest
-@Import({ThemeDao.class, ReservationDao.class, ReservationTimeDao.class})
+@Import({ThemeDao.class, ReservationDao.class, ReservationTimeDao.class, MemberDao.class})
 class ThemeDaoTest {
 
     @Autowired
@@ -28,6 +29,9 @@ class ThemeDaoTest {
 
     @Autowired
     private ReservationTimeDao reservationTimeDao;
+
+    @Autowired
+    private MemberDao memberDao;
 
     @Test
     void 저장_후_ID_생성_확인() {
@@ -68,10 +72,15 @@ class ThemeDaoTest {
 
         ReservationTime time = reservationTimeDao.save(new ReservationTime(LocalTime.parse("10:00")));
 
-        reservationDao.save(new Reservation("피노", LocalDate.parse("2026-05-12"), time, horrorTheme));
-        reservationDao.save(new Reservation("네오", LocalDate.parse("2026-05-13"), time, horrorTheme));
-        reservationDao.save(new Reservation("포비", LocalDate.parse("2026-05-14"), time, horrorTheme));
-        reservationDao.save(new Reservation("브라운", LocalDate.parse("2026-05-15"), time, hospitalTheme));
+        Member pino = memberDao.save(new Member("피노", "pino@test.com", "pw"));
+        Member neo = memberDao.save(new Member("네오", "neo@test.com", "pw"));
+        Member pobi = memberDao.save(new Member("포비", "pobi@test.com", "pw"));
+        Member brown = memberDao.save(new Member("브라운", "brown@test.com", "pw"));
+
+        reservationDao.save(new Reservation(pino, LocalDate.parse("2026-05-12"), time, horrorTheme));
+        reservationDao.save(new Reservation(neo, LocalDate.parse("2026-05-13"), time, horrorTheme));
+        reservationDao.save(new Reservation(pobi, LocalDate.parse("2026-05-14"), time, horrorTheme));
+        reservationDao.save(new Reservation(brown, LocalDate.parse("2026-05-15"), time, hospitalTheme));
 
         //when
         List<PopularThemeResult> result = themeDao.findPopularThemes(startDate, endDate);

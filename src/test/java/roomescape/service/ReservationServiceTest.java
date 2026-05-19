@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import roomescape.dao.MemberDao;
 import roomescape.dao.ReservationDao;
+import roomescape.domain.Member;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
@@ -33,8 +35,16 @@ class ReservationServiceTest {
 
     @Autowired
     private ThemeService themeService;
+
     @Autowired
     private ReservationDao reservationDao;
+
+    @Autowired
+    private MemberDao memberDao;
+
+    private Member max;
+    private Member pobi;
+    private Member pino;
 
     @BeforeEach
     void setUp() {
@@ -42,7 +52,12 @@ class ReservationServiceTest {
         jdbcTemplate.execute("TRUNCATE TABLE reservation RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE theme RESTART IDENTITY");
+        jdbcTemplate.execute("TRUNCATE TABLE member RESTART IDENTITY");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+
+        max = memberDao.save(new Member("맥스", "max@test.com", "pw"));
+        pobi = memberDao.save(new Member("포비", "pobi@test.com", "pw"));
+        pino = memberDao.save(new Member("피노", "pino@test.com", "pw"));
     }
 
     @Test
@@ -61,7 +76,7 @@ class ReservationServiceTest {
         //given
         ReservationTime savedTime = reservationTimeService.save(new ReservationTime(LocalTime.of(10, 0)));
         Theme savedTheme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
-        Reservation savedReservation = reservationService.save("맥스", LocalDate.now().plusDays(1), savedTime.id(),
+        Reservation savedReservation = reservationService.save(max, LocalDate.now().plusDays(1), savedTime.id(),
                 savedTheme.id());
 
         //when
@@ -76,7 +91,7 @@ class ReservationServiceTest {
         //given
         ReservationTime savedTime = reservationTimeService.save(new ReservationTime(LocalTime.of(10, 0)));
         Theme savedTheme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
-        Reservation savedReservation = reservationService.save("맥스", LocalDate.now().plusDays(1), savedTime.id(),
+        Reservation savedReservation = reservationService.save(max, LocalDate.now().plusDays(1), savedTime.id(),
                 savedTheme.id());
 
         //when
@@ -91,11 +106,11 @@ class ReservationServiceTest {
         //given
         ReservationTime savedTime = reservationTimeService.save(new ReservationTime(LocalTime.of(10, 0)));
         Theme savedTheme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
-        reservationService.save("맥스", LocalDate.now().plusDays(1), savedTime.id(), savedTheme.id());
+        reservationService.save(max, LocalDate.now().plusDays(1), savedTime.id(), savedTheme.id());
 
         //when & then
         assertThatThrownBy(() -> reservationService.save(
-                "피노",
+                pino,
                 LocalDate.now().plusDays(1),
                 savedTime.id(),
                 savedTheme.id()))
@@ -104,9 +119,8 @@ class ReservationServiceTest {
     }
 
     @Test
-    void 이름으로_예약찾기() {
+    void 멤버ID로_예약찾기() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         ReservationTime reservationTimeEleven = reservationTimeService.save(
                 new ReservationTime(LocalTime.parse("11:00")));
@@ -115,7 +129,7 @@ class ReservationServiceTest {
         reservationService.save(pobi, LocalDate.now().plusDays(1), reservationTimeEleven.id(), theme.id());
 
         //when
-        List<Reservation> reservations = reservationService.findByName(pobi);
+        List<Reservation> reservations = reservationService.findByMemberId(pobi.getId());
 
         //then
         assertThat(reservations).hasSize(2);
@@ -124,7 +138,6 @@ class ReservationServiceTest {
     @Test
     void 예약_날짜_시간_수정_성공() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().plusDays(1);
@@ -133,17 +146,16 @@ class ReservationServiceTest {
         LocalDate newDate = LocalDate.now().plusDays(2);
 
         //when
-        reservationService.update(savedReservation.id(), newDate, reservationTimeTen.id(), theme.id());
+        reservationService.update(savedReservation.id(), pobi, newDate, reservationTimeTen.id(), theme.id());
 
         //then
-        assertThat(reservationService.findByName(pobi).getFirst().date())
+        assertThat(reservationService.findByMemberId(pobi.getId()).getFirst().date())
                 .isEqualTo(LocalDate.now().plusDays(2));
     }
 
     @Test
     void 과거_예약은_생성_실패() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().minusDays(1);
@@ -151,7 +163,7 @@ class ReservationServiceTest {
                 new Reservation(pobi, localDate, reservationTimeTen, theme));
 
         //when && then
-        assertThatThrownBy(() -> reservationService.deleteByIdFromMember(savedReservation.id()))
+        assertThatThrownBy(() -> reservationService.deleteByIdFromMember(savedReservation.id(), pobi))
                 .isInstanceOf(PastResourceAccessException.class)
                 .hasMessageContaining("과거");
     }
@@ -159,7 +171,6 @@ class ReservationServiceTest {
     @Test
     void 과거_예약은_삭제_실패() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().minusDays(1);
@@ -167,7 +178,7 @@ class ReservationServiceTest {
                 new Reservation(pobi, localDate, reservationTimeTen, theme));
 
         //when && then
-        assertThatThrownBy(() -> reservationService.deleteByIdFromMember(savedReservation.id()))
+        assertThatThrownBy(() -> reservationService.deleteByIdFromMember(savedReservation.id(), pobi))
                 .isInstanceOf(PastResourceAccessException.class)
                 .hasMessageContaining("과거");
     }
@@ -175,7 +186,6 @@ class ReservationServiceTest {
     @Test
     void 과거_예약은_수정_실패() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().minusDays(1);
@@ -185,7 +195,7 @@ class ReservationServiceTest {
 
         //when && then
         assertThatThrownBy(
-                () -> reservationService.update(savedReservation.id(), newDate, reservationTimeTen.id(),
+                () -> reservationService.update(savedReservation.id(), pobi, newDate, reservationTimeTen.id(),
                         theme.id()))
                 .isInstanceOf(PastResourceAccessException.class)
                 .hasMessageContaining("과거 예약");
@@ -194,7 +204,6 @@ class ReservationServiceTest {
     @Test
     void 중복된_예약이_있어서_수정_실패() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().plusDays(1);
@@ -208,6 +217,7 @@ class ReservationServiceTest {
         //when && then
         assertThatThrownBy(() -> reservationService.update(
                 savedReservation.id(),
+                pobi,
                 newDate,
                 reservationTimeTen.id(),
                 theme.id()))
@@ -222,7 +232,7 @@ class ReservationServiceTest {
         LocalDate newDate = LocalDate.now().plusDays(2);
 
         //when & then
-        assertThatThrownBy(() -> reservationService.update(fakeId, newDate, 1L, 1L))
+        assertThatThrownBy(() -> reservationService.update(fakeId, pobi, newDate, 1L, 1L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("존재하지 않습니다");
     }
@@ -230,7 +240,6 @@ class ReservationServiceTest {
     @Test
     void 같은값으로_업데이트_할_시_성공() {
         //given
-        String pobi = "포비";
         ReservationTime reservationTimeTen = reservationTimeService.save(new ReservationTime(LocalTime.parse("10:00")));
         Theme theme = themeService.save(new Theme("공포", "무서움", "https://roomescape.com"));
         LocalDate localDate = LocalDate.now().plusDays(1);
@@ -238,7 +247,7 @@ class ReservationServiceTest {
                 new Reservation(pobi, localDate, reservationTimeTen, theme));
 
         //when
-        reservationService.update(savedReservation.id(), localDate, reservationTimeTen.id(), theme.id());
+        reservationService.update(savedReservation.id(), pobi, localDate, reservationTimeTen.id(), theme.id());
 
         //then
         Reservation updatedReservation = reservationDao.findById(savedReservation.id()).get();

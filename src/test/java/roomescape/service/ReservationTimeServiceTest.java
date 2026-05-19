@@ -12,9 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import roomescape.dao.MemberDao;
 import roomescape.dao.ReservationDao;
 import roomescape.dao.ReservationTimeDao;
 import roomescape.dao.ThemeDao;
+import roomescape.domain.Member;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
@@ -39,12 +41,16 @@ class ReservationTimeServiceTest {
     @Autowired
     private ThemeDao themeDao;
 
+    @Autowired
+    private MemberDao memberDao;
+
     @BeforeEach
     void setUp() {
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.execute("TRUNCATE TABLE reservation RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE theme RESTART IDENTITY");
+        jdbcTemplate.execute("TRUNCATE TABLE member RESTART IDENTITY");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
     }
 
@@ -70,7 +76,8 @@ class ReservationTimeServiceTest {
         ReservationTime savedTime = reservationTimeDao.save(existTime);
         Theme theme = new Theme("공포", "무서움", "https://roomescape.com");
         Theme savedTheme = themeDao.save(theme);
-        Reservation reservation = new Reservation("pobi", LocalDate.parse("2030-05-02"), savedTime, savedTheme);
+        Member pobi = memberDao.save(new Member("pobi", "pobi@test.com", "pw"));
+        Reservation reservation = new Reservation(pobi, LocalDate.parse("2030-05-02"), savedTime, savedTheme);
         reservationDao.save(reservation);
         Long savedId = savedTime.id();
 

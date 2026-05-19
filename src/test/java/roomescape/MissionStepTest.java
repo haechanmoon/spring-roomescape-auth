@@ -17,7 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import roomescape.auth.JwtTokenProvider;
 import roomescape.controller.ReservationController;
+import roomescape.dao.MemberDao;
+import roomescape.domain.Member;
 import roomescape.dto.ReservationResponse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -30,8 +33,21 @@ public class MissionStepTest {
     @Autowired
     private ReservationController reservationController;
 
+    @Autowired
+    private MemberDao memberDao;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    private String token;
+    private Member testMember;
+
     @BeforeEach
-    void 시간_테마_넣어주기() {
+    void 시간_테마_멤버_넣어주기() {
+        // 테스트용 멤버 생성
+        testMember = memberDao.save(new Member("브라운", "brown@test.com", "pw"));
+        token = jwtTokenProvider.createToken(testMember.getId(), testMember.getName());
+
         Map<String, String> timeParams = new HashMap<>();
         timeParams.put("startAt", "10:00");
         Map<String, String> themeParams = new HashMap<>();
@@ -58,6 +74,7 @@ public class MissionStepTest {
     @Test
     void 예약_조회() {
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200)
@@ -67,12 +84,12 @@ public class MissionStepTest {
     @Test
     void 예약_추가_및_삭제() {
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -81,6 +98,7 @@ public class MissionStepTest {
                 .body("id", is(1));
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200)
@@ -92,6 +110,7 @@ public class MissionStepTest {
                 .statusCode(204);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200)
@@ -112,16 +131,18 @@ public class MissionStepTest {
 
     @Test
     void DB_조회_API_전환() {
-        jdbcTemplate.update("INSERT INTO reservation (name, date, time_id, theme_id) VALUES (?, ?, ?, ?)", "브라운",
-                "2030-08-05", "1", "1");
+        jdbcTemplate.update("INSERT INTO reservation (member_id, date, time_id, theme_id) VALUES (?, ?, ?, ?)",
+                testMember.getId(), "2030-08-05", "1", "1");
 
         List<ReservationResponse> reservationResponses = RestAssured.given().log().all()
+                .cookie("token", token)
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200).extract()
                 .jsonPath().getList(".", ReservationResponse.class);
 
-        Integer count = jdbcTemplate.queryForObject("SELECT count(1) from reservation", Integer.class);
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(1) from reservation WHERE member_id = ?", Integer.class, testMember.getId());
 
         assertThat(reservationResponses.size()).isEqualTo(count);
     }
@@ -129,12 +150,12 @@ public class MissionStepTest {
     @Test
     void DB_추가_삭제_API_전환() {
         Map<String, Object> params = new HashMap<>();
-        params.put("name", "브라운");
         params.put("date", "2030-08-05");
         params.put("timeId", 1);
         params.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .contentType(ContentType.JSON)
                 .body(params)
                 .when().post("/reservations")
@@ -171,12 +192,12 @@ public class MissionStepTest {
     @Test
     void 예약과_시간_연결() {
         Map<String, Object> reservation = new HashMap<>();
-        reservation.put("name", "브라운");
         reservation.put("date", "2030-08-05");
         reservation.put("timeId", 1);
         reservation.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .contentType(ContentType.JSON)
                 .body(reservation)
                 .when().post("/reservations")
@@ -184,6 +205,7 @@ public class MissionStepTest {
                 .statusCode(201);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200)
@@ -214,12 +236,12 @@ public class MissionStepTest {
                 .body("[0].available", is(true));
 
         Map<String, Object> reservation = new HashMap<>();
-        reservation.put("name", "브라운");
         reservation.put("date", "2030-08-05");
         reservation.put("timeId", 1);
         reservation.put("themeId", 1);
 
         RestAssured.given().log().all()
+                .cookie("token", token)
                 .contentType(ContentType.JSON)
                 .body(reservation)
                 .when().post("/reservations")

@@ -7,12 +7,14 @@ import org.springframework.stereotype.Service;
 import roomescape.dao.ReservationDao;
 import roomescape.dao.ReservationTimeDao;
 import roomescape.dao.ThemeDao;
+import roomescape.domain.Member;
 import roomescape.domain.Reservation;
 import roomescape.domain.ReservationTime;
 import roomescape.domain.Theme;
 import roomescape.exception.DuplicatedResourceException;
 import roomescape.exception.PastResourceAccessException;
 import roomescape.exception.ResourceNotFoundException;
+import roomescape.exception.UnauthorizedException;
 
 @Service
 public class ReservationService {
@@ -31,7 +33,7 @@ public class ReservationService {
         return reservationDao.findAll();
     }
 
-    public Reservation save(String name, LocalDate date, Long timeId, Long themeId) {
+    public Reservation save(Member member, LocalDate date, Long timeId, Long themeId) {
         if (reservationDao.hasDuplicateReservation(date, timeId, themeId)) {
             throw new DuplicatedResourceException("이미 존재하는 예약입니다.", "DUPLICATED_RESERVATION");
         }
@@ -39,17 +41,22 @@ public class ReservationService {
         validatePastReservation(date, time, "예약");
 
         Theme theme = themeDao.findById(themeId);
-        Reservation reservation = new Reservation(name, date, time, theme);
+        Reservation reservation = new Reservation(member, date, time, theme);
         return reservationDao.save(reservation);
     }
 
-    public List<Reservation> findByName(String name) {
-        return reservationDao.findByName(name);
+    public List<Reservation> findByMemberId(Long memberId) {
+        return reservationDao.findByMemberId(memberId);
     }
 
-    public Reservation update(Long id, LocalDate newDate, Long newTimeId, Long newThemeId) {
+    public Reservation update(Long id, Member member, LocalDate newDate, Long newTimeId, Long newThemeId) {
         Reservation reservation = reservationDao.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("예약이 존재하지 않습니다", "RESERVATION_NOT_FOUND"));
+        
+        if (!reservation.member().getId().equals(member.getId())) {
+            throw new UnauthorizedException("본인의 예약만 수정할 수 있습니다.");
+        }
+        
         validatePastReservation(reservation.date(), reservation.time(), "변경");
 
         ReservationTime reservationTime = reservationTimeDao.findById(newTimeId);
@@ -65,9 +72,14 @@ public class ReservationService {
         reservationDao.deleteById(id);
     }
 
-    public void deleteByIdFromMember(Long id) {
+    public void deleteByIdFromMember(Long id, Member member) {
         Reservation reservation = reservationDao.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("예약이 존재하지 않습니다", "RESERVATION_NOT_FOUND"));
+        
+        if (!reservation.member().getId().equals(member.getId())) {
+            throw new UnauthorizedException("본인의 예약만 삭제할 수 있습니다.");
+        }
+        
         validatePastReservation(reservation.date(), reservation.time(), "삭제");
         reservationDao.deleteById(id);
     }
