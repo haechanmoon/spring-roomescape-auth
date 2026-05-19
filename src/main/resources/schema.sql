@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS reservation;
 DROP TABLE IF EXISTS reservation_time;
 DROP TABLE IF EXISTS theme;
+DROP TABLE IF EXISTS member;
 
 CREATE TABLE reservation_time
 (
@@ -19,14 +20,24 @@ CREATE TABLE theme
     PRIMARY KEY (id)
 );
 
-CREATE TABLE reservation
+CREATE TABLE member
 (
     id       BIGINT       NOT NULL AUTO_INCREMENT,
     name     VARCHAR(255) NOT NULL,
-    date     VARCHAR(255) NOT NULL,
-    time_id  BIGINT,
-    theme_id BIGINT,
+    email    VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE reservation
+(
+    id        BIGINT       NOT NULL AUTO_INCREMENT,
+    member_id BIGINT       NOT NULL,
+    date      VARCHAR(255) NOT NULL,
+    time_id   BIGINT,
+    theme_id  BIGINT,
     PRIMARY KEY (id),
     FOREIGN KEY (time_id) REFERENCES reservation_time (id),
-    FOREIGN KEY (theme_id) REFERENCES theme (id)
+    FOREIGN KEY (theme_id) REFERENCES theme (id),
+    FOREIGN KEY (member_id) REFERENCES member (id)
 );
