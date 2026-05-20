@@ -552,3 +552,19 @@ erDiagram
     - [x] `MissionStepTest` 인증 쿠키 포함하도록 수정
 
 </details>
+
+<details>
+<summary>2단계 - 모바일 앱 요청에서도 로그인 유지하기</summary>
+
+- **토큰 추출 로직 확장**
+  - [ ] AuthInterceptor: 쿠키 없으면 Authorization 헤더에서 토큰 추출
+  - [ ] LoginMemberArgumentResolver: 동일하게 헤더 지원 추가
+  - [ ] 토큰 추출 로직 중복 제거 (공통 메서드로 분리)
+- **모바일 로그인 API**
+  - [ ] POST /login → 응답 body에도 토큰 반환 (모바일은 쿠키 대신 이걸 저장)
+- **테스트**
+  - [ ] Authorization 헤더로 예약 조회 테스트
+  - [ ] 쿠키 없고 헤더도 없으면 401 테스트
+  - [ ] 쿠키와 헤더 둘 다 동작하는지 확인
+
+</details>
