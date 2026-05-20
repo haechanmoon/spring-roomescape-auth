@@ -557,9 +557,9 @@ erDiagram
 <summary>2단계 - 모바일 앱 요청에서도 로그인 유지하기</summary>
 
 - **토큰 추출 로직 확장**
-  - [ ] AuthInterceptor: 쿠키 없으면 Authorization 헤더에서 토큰 추출
-  - [ ] LoginMemberArgumentResolver: 동일하게 헤더 지원 추가
-  - [ ] 토큰 추출 로직 중복 제거 (공통 메서드로 분리)
+  - [x] AuthInterceptor: 쿠키 없으면 Authorization 헤더에서 토큰 추출
+  - [x] LoginMemberArgumentResolver: 동일하게 헤더 지원 추가
+  - [x] 토큰 추출 로직 중복 제거 (공통 메서드로 분리)
 - **모바일 로그인 API**
   - [ ] POST /login → 응답 body에도 토큰 반환 (모바일은 쿠키 대신 이걸 저장)
 - **테스트**
