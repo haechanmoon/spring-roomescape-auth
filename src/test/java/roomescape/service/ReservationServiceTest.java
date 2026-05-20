@@ -129,7 +129,7 @@ class ReservationServiceTest {
         reservationService.save(pobi, LocalDate.now().plusDays(1), reservationTimeEleven.id(), theme.id());
 
         //when
-        List<Reservation> reservations = reservationService.findByMemberId(pobi.getId());
+        List<Reservation> reservations = reservationService.findByMemberId(pobi.id());
 
         //then
         assertThat(reservations).hasSize(2);
@@ -149,7 +149,7 @@ class ReservationServiceTest {
         reservationService.update(savedReservation.id(), pobi, newDate, reservationTimeTen.id(), theme.id());
 
         //then
-        assertThat(reservationService.findByMemberId(pobi.getId()).getFirst().date())
+        assertThat(reservationService.findByMemberId(pobi.id()).getFirst().date())
                 .isEqualTo(LocalDate.now().plusDays(2));
     }
 

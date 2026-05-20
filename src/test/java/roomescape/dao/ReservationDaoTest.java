@@ -93,7 +93,7 @@ class ReservationDaoTest {
         reservationDao.save(new Reservation(pobi, LocalDate.now().plusDays(1), reservationTimeEleven, theme));
 
         //when
-        List<Reservation> reservations = reservationDao.findByMemberId(pobi.getId());
+        List<Reservation> reservations = reservationDao.findByMemberId(pobi.id());
 
         //then
         assertThat(reservations).hasSize(2);

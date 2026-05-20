@@ -46,7 +46,7 @@ public class MissionStepTest {
     void 시간_테마_멤버_넣어주기() {
         // 테스트용 멤버 생성
         testMember = memberDao.save(new Member("브라운", "brown@test.com", "pw"));
-        token = jwtTokenProvider.createToken(testMember.getId(), testMember.getName());
+        token = jwtTokenProvider.createToken(testMember.id(), testMember.name());
 
         Map<String, String> timeParams = new HashMap<>();
         timeParams.put("startAt", "10:00");
@@ -132,7 +132,7 @@ public class MissionStepTest {
     @Test
     void DB_조회_API_전환() {
         jdbcTemplate.update("INSERT INTO reservation (member_id, date, time_id, theme_id) VALUES (?, ?, ?, ?)",
-                testMember.getId(), "2030-08-05", "1", "1");
+                testMember.id(), "2030-08-05", "1", "1");
 
         List<ReservationResponse> reservationResponses = RestAssured.given().log().all()
                 .cookie("token", token)
@@ -142,7 +142,7 @@ public class MissionStepTest {
                 .jsonPath().getList(".", ReservationResponse.class);
 
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT count(1) from reservation WHERE member_id = ?", Integer.class, testMember.getId());
+                "SELECT count(1) from reservation WHERE member_id = ?", Integer.class, testMember.id());
 
         assertThat(reservationResponses.size()).isEqualTo(count);
     }

@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.auth.LoginMember;
@@ -29,7 +28,7 @@ public class ReservationController {
 
     @GetMapping("/reservations")
     public List<ReservationResponse> findMyReservations(@LoginMember Member member) {
-        return reservationService.findByMemberId(member.getId()).stream()
+        return reservationService.findByMemberId(member.id()).stream()
                 .map(ReservationResponse::from)
                 .toList();
     }

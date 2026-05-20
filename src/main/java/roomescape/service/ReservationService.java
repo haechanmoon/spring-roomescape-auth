@@ -53,7 +53,7 @@ public class ReservationService {
         Reservation reservation = reservationDao.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("예약이 존재하지 않습니다", "RESERVATION_NOT_FOUND"));
         
-        if (!reservation.member().getId().equals(member.getId())) {
+        if (!reservation.member().id().equals(member.id())) {
             throw new UnauthorizedException("본인의 예약만 수정할 수 있습니다.");
         }
         
@@ -76,7 +76,7 @@ public class ReservationService {
         Reservation reservation = reservationDao.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("예약이 존재하지 않습니다", "RESERVATION_NOT_FOUND"));
         
-        if (!reservation.member().getId().equals(member.getId())) {
+        if (!reservation.member().id().equals(member.id())) {
             throw new UnauthorizedException("본인의 예약만 삭제할 수 있습니다.");
         }
         

@@ -31,7 +31,7 @@ public record Reservation(
     }
 
     public String name() {
-        return member != null ? member.getName() : null;
+        return member != null ? member.name() : null;
     }
 }
 

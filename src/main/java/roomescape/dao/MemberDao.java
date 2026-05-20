@@ -39,11 +39,11 @@ public class MemberDao {
         org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             java.sql.PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
-            ps.setString(1, member.getName());
-            ps.setString(2, member.getEmail());
-            ps.setString(3, member.getPassword());
+            ps.setString(1, member.name());
+            ps.setString(2, member.email());
+            ps.setString(3, member.password());
             return ps;
         }, keyHolder);
-        return new Member(keyHolder.getKey().longValue(), member.getName(), member.getEmail(), member.getPassword());
+        return new Member(keyHolder.getKey().longValue(), member.name(), member.email(), member.password());
     }
 }

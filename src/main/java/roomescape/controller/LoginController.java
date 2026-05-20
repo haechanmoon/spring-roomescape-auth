@@ -26,7 +26,7 @@ public class LoginController {
     public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         Member member = memberService.login(loginRequest.email(), loginRequest.password());
         
-        String token = jwtTokenProvider.createToken(member.getId(), member.getName());
+        String token = jwtTokenProvider.createToken(member.id(), member.name());
         
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
