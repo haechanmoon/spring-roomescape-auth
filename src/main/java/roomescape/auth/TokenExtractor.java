@@ -1,5 +1,8 @@
 package roomescape.auth;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TokenExtractor {
 
     public String extract(String header) {

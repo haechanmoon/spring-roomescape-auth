@@ -12,16 +12,22 @@ import roomescape.exception.UnauthorizedException;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenExtractor tokenExtractor;
 
-    public AuthInterceptor(JwtTokenProvider jwtTokenProvider) {
+    public AuthInterceptor(JwtTokenProvider jwtTokenProvider, TokenExtractor tokenExtractor) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.tokenExtractor = tokenExtractor;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String token = extractTokenFromCookie(request);
 
-        if (token == null || !jwtTokenProvider.validateToken(token)) {
+        if (token == null) {
+            token = extractTokenFromHeader(request);
+        }
+
+        if(token == null || !jwtTokenProvider.validateToken(token)){
             throw new UnauthorizedException("로그인이 필요합니다.");
         }
 
@@ -37,5 +43,10 @@ public class AuthInterceptor implements HandlerInterceptor {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        return tokenExtractor.extract(header);
     }
 }
