@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import roomescape.auth.JwtTokenProvider;
 import roomescape.domain.Member;
 import roomescape.dto.LoginRequest;
+import roomescape.dto.TokenResponse;
 import roomescape.service.MemberService;
 
 @RestController
@@ -23,7 +24,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         Member member = memberService.login(loginRequest.email(), loginRequest.password());
         
         String token = jwtTokenProvider.createToken(member.id(), member.name());
@@ -33,6 +34,6 @@ public class LoginController {
         cookie.setPath("/");
         response.addCookie(cookie);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new TokenResponse(token));
     }
 }

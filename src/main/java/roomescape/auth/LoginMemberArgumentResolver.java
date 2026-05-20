@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import org.springframework.core.MethodParameter;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -18,10 +19,13 @@ public class LoginMemberArgumentResolver implements HandlerMethodArgumentResolve
 
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberService memberService;
+    private final TokenExtractor tokenExtractor;
 
-    public LoginMemberArgumentResolver(JwtTokenProvider jwtTokenProvider, MemberService memberService) {
+    public LoginMemberArgumentResolver(JwtTokenProvider jwtTokenProvider, MemberService memberService,
+                                       TokenExtractor tokenExtractor) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.memberService = memberService;
+        this.tokenExtractor = tokenExtractor;
     }
 
     @Override
@@ -31,10 +35,14 @@ public class LoginMemberArgumentResolver implements HandlerMethodArgumentResolve
     }
 
     @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+    public Object resolveArgument(@NonNull MethodParameter parameter, ModelAndViewContainer mavContainer,
                                   NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
         HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
         String token = extractTokenFromCookie(request);
+
+        if(token ==null){
+            token = extractTokenFromHeader(request);
+        }
 
         if (token == null || !jwtTokenProvider.validateToken(token)) {
             throw new UnauthorizedException("로그인이 필요합니다.");
@@ -53,5 +61,10 @@ public class LoginMemberArgumentResolver implements HandlerMethodArgumentResolve
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request){
+        String header =  request.getHeader("Authorization");
+        return tokenExtractor.extract(header);
     }
 }
